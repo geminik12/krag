@@ -1,0 +1,12 @@
+# 配置文件
+addr: :8080
+
+# JWT 签发密钥
+jwt-key: lvUe83mVtBsfm5jbl2eIY2WD1Wb9eAKIxGfAtMpE+Yw=
+expiration: 100h
+
+# 日志配置
+log:
+  format: json
+  level: info
+  output: stdout
