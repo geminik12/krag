@@ -5,6 +5,23 @@ addr: :8080
 jwt-key: lvUe83mVtBsfm5jbl2eIY2WD1Wb9eAKIxGfAtMpE+Yw=
 expiration: 100h
 
+mysql:
+  mysql:
+  # MySQL 机器 IP 和端口，默认 127.0.0.1:3306
+  addr: 127.0.0.1:3306
+  # MySQL 用户名(建议授权最小权限集)
+  username: krag_db_w
+  # MySQL 用户密码
+  password: krag_db_w_pass
+  # fastgo 系统所用的数据库名
+  database: krag_db
+  # MySQL 最大空闲连接数，默认 100
+  max-idle-connections: 100
+  # MySQL 最大打开的连接数，默认 100
+  max-open-connections: 100
+  # 空闲连接最大存活时间，默认 10s
+  max-connection-life-time: 10s
+
 # 日志配置
 log:
   format: json
