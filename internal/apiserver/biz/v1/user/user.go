@@ -88,7 +88,7 @@ func (b *userBiz) RefreshToken(ctx context.Context, rq *apiv1.RefreshTokenReques
 
 // ChangePassword 实现 UserBiz 接口中的 ChangePassword 方法.
 func (b *userBiz) ChangePassword(ctx context.Context, rq *apiv1.ChangePasswordRequest) (*apiv1.ChangePasswordResponse, error) {
-	userM, err := b.store.User().Get(ctx, db.F("userID", contextx.UserID(ctx)))
+	userM, err := b.store.User().Get(ctx, db.F("user_id", contextx.UserID(ctx)))
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (b *userBiz) Create(ctx context.Context, rq *apiv1.CreateUserRequest) (*api
 
 // Update 实现 UserBiz 接口中的 Update 方法.
 func (b *userBiz) Update(ctx context.Context, rq *apiv1.UpdateUserRequest) (*apiv1.UpdateUserResponse, error) {
-	userM, err := b.store.User().Get(ctx, db.F("userID", contextx.UserID(ctx)))
+	userM, err := b.store.User().Get(ctx, db.F("user_id", contextx.UserID(ctx)))
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (b *userBiz) Update(ctx context.Context, rq *apiv1.UpdateUserRequest) (*api
 
 // Delete 实现 UserBiz 接口中的 Delete 方法.
 func (b *userBiz) Delete(ctx context.Context, rq *apiv1.DeleteUserRequest) (*apiv1.DeleteUserResponse, error) {
-	if err := b.store.User().Delete(ctx, db.F("userID", contextx.UserID(ctx))); err != nil {
+	if err := b.store.User().Delete(ctx, db.F("user_id", contextx.UserID(ctx))); err != nil {
 		return nil, err
 	}
 
@@ -156,7 +156,7 @@ func (b *userBiz) Delete(ctx context.Context, rq *apiv1.DeleteUserRequest) (*api
 
 // Get 实现 UserBiz 接口中的 Get 方法.
 func (b *userBiz) Get(ctx context.Context, rq *apiv1.GetUserRequest) (*apiv1.GetUserResponse, error) {
-	userM, err := b.store.User().Get(ctx, db.F("userID", contextx.UserID(ctx)))
+	userM, err := b.store.User().Get(ctx, db.F("user_id", contextx.UserID(ctx)))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (b *userBiz) List(ctx context.Context, rq *apiv1.ListUserRequest) (*apiv1.L
 			case <-ctx.Done():
 				return nil
 			default:
-				count, _, err := b.store.User().List(ctx, db.F("userID", contextx.UserID(ctx)))
+				count, _, err := b.store.User().List(ctx, db.F("user_id", user.UserID))
 				if err != nil {
 					return err
 				}
@@ -206,7 +206,7 @@ func (b *userBiz) List(ctx context.Context, rq *apiv1.ListUserRequest) (*apiv1.L
 
 	users := make([]*apiv1.User, 0, len(userList))
 	for _, item := range userList {
-		user, _ := m.Load(item.ID)
+		user, _ := m.Load(item.UserID)
 		users = append(users, user.(*apiv1.User))
 	}
 

@@ -27,3 +27,8 @@ log:
   format: json
   level: info
   output: stdout
+
+ollama:
+  host: http://localhost:11434
+  default-model: llama3.2
+  system-prompt: You are a helpful assistant, please answer the questions in a concise manner. If the question is not related to the knowledge, please answer "I don't know". answer the question in what language the question is asked.

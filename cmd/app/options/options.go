@@ -11,8 +11,9 @@ import (
 )
 
 type ServerOptions struct {
-	MySQLOptions *genericoptions.MySQLOptions `json:"mysql" mapstructure:"mysql"`
-	Addr         string                       `json:"addr" mapstructure:"addr"`
+	MySQLOptions  *genericoptions.MySQLOptions  `json:"mysql" mapstructure:"mysql"`
+	OllamaOptions *genericoptions.OllamaOptions `json:"ollama" mapstructure:"ollama"`
+	Addr          string                        `json:"addr" mapstructure:"addr"`
 	// JWTKey 定义 JWT 密钥.
 	JWTKey string `json:"jwt-key" mapstructure:"jwt-key"`
 	// Expiration 定义 JWT Token 的过期时间.
@@ -22,9 +23,10 @@ type ServerOptions struct {
 // NewServerOptions 创建带有默认值的 ServerOptions 实例.
 func NewServerOptions() *ServerOptions {
 	return &ServerOptions{
-		MySQLOptions: genericoptions.NewMySQLOptions(),
-		Addr:         "0.0.0.0:6666",
-		Expiration:   2 * time.Hour,
+		MySQLOptions:  genericoptions.NewMySQLOptions(),
+		OllamaOptions: genericoptions.NewOllamaOptions(),
+		Addr:          "0.0.0.0:6666",
+		Expiration:    2 * time.Hour,
 	}
 }
 
@@ -32,6 +34,9 @@ func NewServerOptions() *ServerOptions {
 // 提示：Validate 方法中的具体校验逻辑可以由 Claude、DeepSeek、GPT 等 LLM 自动生成。
 func (o *ServerOptions) Validate() error {
 	if err := o.MySQLOptions.Validate(); err != nil {
+		return err
+	}
+	if err := o.OllamaOptions.Validate(); err != nil {
 		return err
 	}
 
@@ -63,9 +68,10 @@ func (o *ServerOptions) Validate() error {
 // Config 基于 ServerOptions 构建 apiserver.HttpServerConfig.
 func (o *ServerOptions) Config() (*apiserver.HttpServerConfig, error) {
 	return &apiserver.HttpServerConfig{
-		MySQLOptions: o.MySQLOptions,
-		Addr:         o.Addr,
-		JWTKey:       o.JWTKey,
-		Expiration:   o.Expiration,
+		MySQLOptions:  o.MySQLOptions,
+		OllamaOptions: o.OllamaOptions,
+		Addr:          o.Addr,
+		JWTKey:        o.JWTKey,
+		Expiration:    o.Expiration,
 	}, nil
 }
