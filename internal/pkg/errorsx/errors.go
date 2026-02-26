@@ -50,5 +50,5 @@ func FromError(err error) *ErrorX {
 	}
 
 	// 默认返回未知错误错误. 该错误代表服务端出错
-	return New(ErrInternal.Code, ErrInternal.Reason, err.Error())
+	return New(ErrInternal.Code, ErrInternal.Reason, "%s", err.Error())
 }
