@@ -4,8 +4,8 @@ import "time"
 
 // User 表示用户信息
 type User struct {
-	// userID 表示用户 ID
-	UserID string `json:"userID"`
+	// UserID 表示用户 ID
+	UserID string `json:"user_id"`
 	// username 表示用户名称
 	Username string `json:"username"`
 	// nickname 表示用户昵称
@@ -79,7 +79,7 @@ type CreateUserRequest struct {
 // CreateUserResponse 表示创建用户响应
 type CreateUserResponse struct {
 	// userID 表示新创建的用户 ID
-	UserID string `json:"userID"`
+	UserID string `json:"user_id"`
 }
 
 // UpdateUserRequest 表示更新用户请求

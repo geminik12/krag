@@ -8,8 +8,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/onexstack/onexstack v0.3.23
+	github.com/pkoukk/tiktoken-go v0.1.6
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
+	github.com/tmc/langchaingo v0.1.14
 	golang.org/x/crypto v0.47.0
 	golang.org/x/sync v0.19.0
 	gorm.io/driver/mysql v1.6.0
@@ -22,6 +24,7 @@ require (
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect

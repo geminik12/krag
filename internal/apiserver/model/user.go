@@ -7,7 +7,7 @@ const TableNameUser = "user"
 // User 用户表
 type User struct {
 	ID        int64     `gorm:"column:id;primaryKey;autoIncrement:true" json:"id"`
-	UserID    string    `gorm:"column:userID;not null;comment:用户唯一 ID" json:"userID"`                                    // 用户唯一 ID
+	UserID    string    `gorm:"column:user_id;not null;comment:用户唯一 ID" json:"user_id"`                                  // 用户唯一 ID
 	Username  string    `gorm:"column:username;not null;comment:用户名（唯一）" json:"username"`                                // 用户名（唯一）
 	Password  string    `gorm:"column:password;not null;comment:用户密码（加密后）" json:"password"`                              // 用户密码（加密后）
 	Nickname  string    `gorm:"column:nickname;not null;comment:用户昵称" json:"nickname"`                                   // 用户昵称

@@ -18,6 +18,7 @@ type IStore interface {
 	TX(ctx context.Context, fn func(ctx context.Context) error) error
 
 	User() UserStore
+	Conversation() ConversationStore
 }
 
 type transactionKey struct {
@@ -63,4 +64,8 @@ func (store *datastore) TX(ctx context.Context, fn func(ctx context.Context) err
 // Users 返回一个实现了 UserStore 接口的实例.
 func (store *datastore) User() UserStore {
 	return newUserStore(store)
+}
+
+func (store *datastore) Conversation() ConversationStore {
+	return newConversations(store.core)
 }

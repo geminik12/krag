@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/geminik12/krag/internal/pkg/core"
@@ -11,24 +12,30 @@ import (
 
 // Login 用户登录并返回 JWT Token.
 func (h *Handler) Login(c *gin.Context) {
+	fmt.Println("DEBUG: Login handler reached")
 	slog.Info("Login function called")
 
 	var rq v1.LoginRequest
 	if err := c.ShouldBindJSON(&rq); err != nil {
+		fmt.Printf("DEBUG: Bind JSON error: %v\n", err)
 		core.WriteResponse(c, nil, errorsx.ErrBind)
 		return
 	}
+	fmt.Printf("DEBUG: Login request: username=%s\n", rq.Username)
 
 	if err := h.val.ValidateLoginRequest(c.Request.Context(), &rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
+		fmt.Printf("DEBUG: Validate error: %v\n", err)
+		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage("%s", err.Error()))
 		return
 	}
 
 	resp, err := h.biz.UserV1().Login(c.Request.Context(), &rq)
 	if err != nil {
+		fmt.Printf("DEBUG: Login biz error: %v\n", err)
 		core.WriteResponse(c, nil, err)
 		return
 	}
+	fmt.Println("DEBUG: Login successful")
 
 	core.WriteResponse(c, resp, nil)
 }
@@ -63,7 +70,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 	}
 
 	if err := h.val.ValidateChangePasswordRequest(c.Request.Context(), &rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
+		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage("%s", err.Error()))
 		return
 	}
 
@@ -87,7 +94,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	}
 
 	if err := h.val.ValidateCreateUserRequest(c.Request.Context(), &rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
+		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage("%s", err.Error()))
 		return
 	}
 
@@ -111,7 +118,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	}
 
 	if err := h.val.ValidateUpdateUserRequest(c.Request.Context(), &rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
+		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage("%s", err.Error()))
 		return
 	}
 
@@ -173,7 +180,7 @@ func (h *Handler) ListUser(c *gin.Context) {
 	}
 
 	if err := h.val.ValidateListUserRequest(c.Request.Context(), &rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
+		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage("%s", err.Error()))
 		return
 	}
 

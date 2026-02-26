@@ -11,6 +11,7 @@ import (
 	"github.com/geminik12/krag/internal/pkg/core"
 	"github.com/geminik12/krag/internal/pkg/errorsx"
 	"github.com/geminik12/krag/internal/pkg/known"
+	"github.com/geminik12/krag/internal/pkg/llm"
 	"github.com/gin-gonic/gin"
 
 	mw "github.com/geminik12/krag/internal/pkg/middleware"
@@ -19,10 +20,11 @@ import (
 )
 
 type HttpServerConfig struct {
-	MySQLOptions *genericoptions.MySQLOptions
-	Addr         string
-	JWTKey       string
-	Expiration   time.Duration
+	MySQLOptions  *genericoptions.MySQLOptions
+	Addr          string
+	JWTKey        string
+	Expiration    time.Duration
+	OllamaOptions *genericoptions.OllamaOptions
 }
 
 func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
@@ -38,8 +40,9 @@ func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
 		return nil, err
 	}
 	store := store.NewStore(db)
+	client := cfg.OllamaOptions.NewClient()
 
-	cfg.InstallRESTAPI(engine, store)
+	cfg.InstallRESTAPI(engine, store, client)
 
 	return &ginServer{
 		cfg: cfg,
@@ -50,7 +53,7 @@ func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
 	}, nil
 }
 
-func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.IStore) {
+func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.IStore, client llm.Client) {
 	engine.NoRoute(func(c *gin.Context) {
 		core.WriteResponse(c, nil, errorsx.ErrNotFound.WithMessage("Page not found."))
 	})
@@ -60,7 +63,7 @@ func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.ISto
 	})
 
 	// 创建核心业务处理器
-	handler := handler.NewHandler(biz.NewBiz(store), validation.NewValidator(store))
+	handler := handler.NewHandler(biz.NewBiz(store, client), validation.NewValidator(store))
 
 	// 注册用户登录和令牌刷新接口。这2个接口比较简单，所以没有 API 版本
 	engine.POST("/login", handler.Login)
@@ -79,6 +82,22 @@ func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.ISto
 			userv1.PUT(":userID/change-password", handler.ChangePassword)
 			userv1.DELETE(":userID", handler.DeleteUser)
 			userv1.GET(":userID", handler.GetUser)
+		}
+
+		conversationv1 := v1.Group("/conversations")
+		{
+			conversationv1.Use(authMiddlewares...)
+			conversationv1.POST("", handler.CreateConversation)
+			conversationv1.GET("", handler.ListConversation)
+			conversationv1.GET(":id", handler.GetConversation)
+			conversationv1.DELETE(":id", handler.DeleteConversation)
+			conversationv1.GET(":id/messages", handler.ListMessage)
+		}
+
+		chatv1 := v1.Group("/chat")
+		{
+			chatv1.Use(authMiddlewares...)
+			chatv1.POST("", handler.Chat)
 		}
 	}
 }
