@@ -11,8 +11,12 @@ import (
 )
 
 type ServerOptions struct {
-	MySQLOptions *genericoptions.MySQLOptions `json:"mysql" mapstructure:"mysql"`
-	Addr         string                       `json:"addr" mapstructure:"addr"`
+	MySQLOptions  *genericoptions.MySQLOptions  `json:"mysql" mapstructure:"mysql"`
+	OllamaOptions *genericoptions.OllamaOptions `json:"ollama" mapstructure:"ollama"`
+	MinIOOptions  *genericoptions.MinIOOptions  `json:"minio" mapstructure:"minio"`
+	QdrantOptions *genericoptions.QdrantOptions `json:"qdrant" mapstructure:"qdrant"`
+	RedisOptions  *genericoptions.RedisOptions  `json:"redis" mapstructure:"redis"`
+	Addr          string                        `json:"addr" mapstructure:"addr"`
 	// JWTKey 定义 JWT 密钥.
 	JWTKey string `json:"jwt-key" mapstructure:"jwt-key"`
 	// Expiration 定义 JWT Token 的过期时间.
@@ -22,9 +26,13 @@ type ServerOptions struct {
 // NewServerOptions 创建带有默认值的 ServerOptions 实例.
 func NewServerOptions() *ServerOptions {
 	return &ServerOptions{
-		MySQLOptions: genericoptions.NewMySQLOptions(),
-		Addr:         "0.0.0.0:6666",
-		Expiration:   2 * time.Hour,
+		MySQLOptions:  genericoptions.NewMySQLOptions(),
+		OllamaOptions: genericoptions.NewOllamaOptions(),
+		MinIOOptions:  genericoptions.NewMinIOOptions(),
+		QdrantOptions: genericoptions.NewQdrantOptions(),
+		RedisOptions:  genericoptions.NewRedisOptions(),
+		Addr:          "0.0.0.0:6666",
+		Expiration:    2 * time.Hour,
 	}
 }
 
@@ -33,6 +41,18 @@ func NewServerOptions() *ServerOptions {
 func (o *ServerOptions) Validate() error {
 	if err := o.MySQLOptions.Validate(); err != nil {
 		return err
+	}
+	if err := o.OllamaOptions.Validate(); err != nil {
+		return err
+	}
+	if errs := o.MinIOOptions.Validate(); len(errs) > 0 {
+		return errs[0]
+	}
+	if errs := o.QdrantOptions.Validate(); len(errs) > 0 {
+		return errs[0]
+	}
+	if errs := o.RedisOptions.Validate(); len(errs) > 0 {
+		return errs[0]
 	}
 
 	// 验证服务器地址
@@ -63,9 +83,13 @@ func (o *ServerOptions) Validate() error {
 // Config 基于 ServerOptions 构建 apiserver.HttpServerConfig.
 func (o *ServerOptions) Config() (*apiserver.HttpServerConfig, error) {
 	return &apiserver.HttpServerConfig{
-		MySQLOptions: o.MySQLOptions,
-		Addr:         o.Addr,
-		JWTKey:       o.JWTKey,
-		Expiration:   o.Expiration,
+		MySQLOptions:  o.MySQLOptions,
+		OllamaOptions: o.OllamaOptions,
+		MinIOOptions:  o.MinIOOptions,
+		QdrantOptions: o.QdrantOptions,
+		RedisOptions:  o.RedisOptions,
+		Addr:          o.Addr,
+		JWTKey:        o.JWTKey,
+		Expiration:    o.Expiration,
 	}, nil
 }
