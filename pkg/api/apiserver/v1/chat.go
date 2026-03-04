@@ -6,6 +6,7 @@ type ChatRequest struct {
 	Content        string `json:"content" binding:"required"`
 	Model          string `json:"model"`
 	Stream         bool   `json:"stream"`
+	UseRAG         bool   `json:"use_rag"`
 }
 
 // ChatResponse 对话响应（非流式）

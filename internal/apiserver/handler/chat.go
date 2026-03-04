@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/geminik12/krag/internal/pkg/contextx"
 	"github.com/geminik12/krag/internal/pkg/core"
@@ -37,11 +38,27 @@ func (h *Handler) Chat(c *gin.Context) {
 		return
 	}
 
+	// 1.5 RAG: 如果开启了 RAG，先检索知识库
+	promptContent := r.Content
+	if r.UseRAG {
+		kResp, err := h.biz.KnowledgeV1().Search(c.Request.Context(), &v1.SearchKnowledgeRequest{
+			Query: r.Content,
+			K:     3,
+		})
+		if err == nil && len(kResp.Results) > 0 {
+			contextText := ""
+			for _, res := range kResp.Results {
+				contextText += res.Content + "\n---\n"
+			}
+			promptContent = fmt.Sprintf("请根据以下参考资料回答问题：\n\n%s\n\n用户问题：%s", contextText, r.Content)
+		}
+	}
+
 	// 2. 构建消息上下文 (Token Management)
 	// 当前用户问题
 	currentUserMsg := llm.Message{
 		Role:    llm.RoleUser,
-		Content: r.Content,
+		Content: promptContent,
 	}
 	currentTokens := llm.CountTokens(currentUserMsg.Content)
 

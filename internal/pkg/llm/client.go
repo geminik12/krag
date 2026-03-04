@@ -1,6 +1,10 @@
 package llm
 
-import "context"
+import (
+	"context"
+
+	"github.com/tmc/langchaingo/embeddings"
+)
 
 const (
 	RoleSystem    = "system"
@@ -16,4 +20,5 @@ type Message struct {
 type Client interface {
 	Chat(ctx context.Context, messages []Message, model string) (string, error)
 	ChatStream(ctx context.Context, messages []Message, model string, onDelta func(string) error) error
+	GetEmbedder(model string) (embeddings.Embedder, error)
 }

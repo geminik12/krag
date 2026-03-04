@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage, useDialog, ScrollbarInst } from 'naive-ui'
+import { useMessage, useDialog, ScrollbarInst, UploadFileInfo } from 'naive-ui'
 import api from '../api'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 // import 'highlight.js/styles/atom-one-dark.css' // Removed in favor of CDN link in index.html
 
-const md = new MarkdownIt({
+let md: MarkdownIt
+md = new MarkdownIt({
   html: false,
   linkify: true,
   typographer: true,
-  highlight: function (str, lang) {
+  highlight: (str: string, lang: string) => {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return '<pre class="hljs"><code>' +
@@ -57,6 +58,21 @@ const modelOptions = [
 ]
 const streaming = ref(false)
 const scrollbarRef = ref<ScrollbarInst | null>(null)
+
+const showKnowledgeModal = ref(false)
+const useRAG = ref(false)
+const uploadHeaders = {
+  Authorization: `Bearer ${localStorage.getItem('token')}`
+}
+
+const handleUploadFinish = ({ file }: { file: UploadFileInfo }) => {
+  message.success('上传成功')
+  return file
+}
+
+const handleUploadError = () => {
+  message.error('上传失败')
+}
 
 const loadConversations = async () => {
   try {
@@ -111,6 +127,14 @@ const handleLogout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
   router.push('/login')
+}
+
+const handleDeleteConversationClick = (id: string, e: MouseEvent) => {
+  deleteConversation(id, e)
+}
+
+const handleEnterKey = (e: KeyboardEvent) => {
+  if (!e.shiftKey) sendMessage()
 }
 
 const scrollToBottom = () => {
@@ -170,7 +194,8 @@ const sendMessage = async () => {
         conversation_id: convId,
         content: content,
         model: selectedModel.value,
-        stream: true
+        stream: true,
+        use_rag: useRAG.value
       })
     })
 
@@ -224,9 +249,6 @@ const sendMessage = async () => {
   }
 }
 
-// Helper for reactive inside ref array
-import { reactive } from 'vue'
-
 onMounted(() => {
   loadConversations()
 })
@@ -246,6 +268,9 @@ onMounted(() => {
         <n-button type="primary" dashed block @click="createNewConversation">
           + 新建会话
         </n-button>
+        <n-button dashed block @click="showKnowledgeModal = true" style="margin-top: 12px;">
+          📚 知识库管理
+        </n-button>
         <div style="margin-top: 20px; flex: 1; overflow-y: auto;">
           <n-list hoverable clickable>
             <n-list-item v-for="conv in conversations" :key="conv.conversation_id" 
@@ -258,7 +283,7 @@ onMounted(() => {
                         </n-text>
                     </template>
                     <template #header-extra>
-                        <n-button size="tiny" text type="error" @click="(e) => deleteConversation(conv.conversation_id, e)">x</n-button>
+                        <n-button size="tiny" text type="error" @click="handleDeleteConversationClick(conv.conversation_id, $event)">x</n-button>
                     </template>
                 </n-thing>
             </n-list-item>
@@ -315,21 +340,50 @@ onMounted(() => {
                 type="textarea"
                 placeholder="输入消息，按 Enter 发送 (Shift+Enter 换行)..."
                 :autosize="{ minRows: 2, maxRows: 6 }"
-                @keydown.enter.prevent="(e) => { if(!e.shiftKey) sendMessage() }"
+                @keydown.enter.prevent="handleEnterKey"
                 :disabled="streaming"
             />
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-                <div style="width: 200px;">
-                    <n-select v-model:value="selectedModel" :options="modelOptions" size="small" placeholder="选择模型" />
-                </div>
-                <n-button type="primary" :loading="streaming" :disabled="!inputMessage.trim() && !streaming" @click="sendMessage">
-                    发送
-                </n-button>
-            </div>
+                 <div style="display: flex; gap: 12px; align-items: center;">
+                     <div style="width: 180px;">
+                         <n-select v-model:value="selectedModel" :options="modelOptions" size="small" placeholder="选择模型" />
+                     </div>
+                     <n-switch v-model:value="useRAG">
+                        <template #checked>RAG 开启</template>
+                        <template #unchecked>RAG 关闭</template>
+                     </n-switch>
+                 </div>
+                 <n-button type="primary" :loading="streaming" :disabled="!inputMessage.trim() && !streaming" @click="sendMessage">
+                     发送
+                 </n-button>
+             </div>
         </div>
       </n-layout-content>
     </n-layout>
   </n-layout>
+
+  <n-modal v-model:show="showKnowledgeModal">
+    <n-card
+      style="width: 600px"
+      title="知识库管理"
+      :bordered="false"
+      size="huge"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div style="margin-bottom: 20px;">
+        上传文件到知识库（支持 .txt, .md）
+      </div>
+      <n-upload
+        action="/v1/knowledge/upload"
+        :headers="uploadHeaders"
+        @finish="handleUploadFinish"
+        @error="handleUploadError"
+      >
+        <n-button>上传文件</n-button>
+      </n-upload>
+    </n-card>
+  </n-modal>
 </template>
 
 <style>

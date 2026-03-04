@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/geminik12/krag/internal/pkg/errorsx"
+	"github.com/tmc/langchaingo/embeddings"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"
 )
@@ -48,6 +49,33 @@ func NewOllamaClient(opts ...Option) Client {
 	}
 
 	return c
+}
+
+func (o *ollamaClient) GetEmbedder(model string) (embeddings.Embedder, error) {
+	llm, err := o.getLLM(model)
+	if err != nil {
+		return nil, err
+	}
+	return &ollamaEmbedder{llm: llm}, nil
+}
+
+type ollamaEmbedder struct {
+	llm *ollama.LLM
+}
+
+func (e *ollamaEmbedder) EmbedDocuments(ctx context.Context, texts []string) ([][]float32, error) {
+	return e.llm.CreateEmbedding(ctx, texts)
+}
+
+func (e *ollamaEmbedder) EmbedQuery(ctx context.Context, text string) ([]float32, error) {
+	res, err := e.llm.CreateEmbedding(ctx, []string{text})
+	if err != nil {
+		return nil, err
+	}
+	if len(res) == 0 {
+		return nil, nil
+	}
+	return res[0], nil
 }
 
 func (o *ollamaClient) resolveModel(model string) string {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineComponent } from 'vue'
 import { darkTheme, NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
 </script>
 

@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,8 +12,11 @@ import (
 	"github.com/geminik12/krag/internal/pkg/core"
 	"github.com/geminik12/krag/internal/pkg/errorsx"
 	"github.com/geminik12/krag/internal/pkg/known"
-	"github.com/geminik12/krag/internal/pkg/llm"
+	"github.com/geminik12/krag/internal/pkg/storage"
+	"github.com/geminik12/krag/internal/pkg/worker"
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
+	"github.com/hibiken/asynqmon"
 
 	mw "github.com/geminik12/krag/internal/pkg/middleware"
 	genericoptions "github.com/geminik12/krag/pkg/options"
@@ -25,6 +29,9 @@ type HttpServerConfig struct {
 	JWTKey        string
 	Expiration    time.Duration
 	OllamaOptions *genericoptions.OllamaOptions
+	MinIOOptions  *genericoptions.MinIOOptions
+	QdrantOptions *genericoptions.QdrantOptions
+	RedisOptions  *genericoptions.RedisOptions
 }
 
 func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
@@ -42,7 +49,48 @@ func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
 	store := store.NewStore(db)
 	client := cfg.OllamaOptions.NewClient()
 
-	cfg.InstallRESTAPI(engine, store, client)
+	// 初始化 MinIO 存储
+	minioStore, err := storage.NewMinio(
+		cfg.MinIOOptions.Endpoint,
+		cfg.MinIOOptions.AccessKeyID,
+		cfg.MinIOOptions.SecretAccessKey,
+		cfg.MinIOOptions.Bucket,
+		cfg.MinIOOptions.UseSSL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Init Asynq Client
+	asynqClient := asynq.NewClient(asynq.RedisClientOpt{
+		Addr:     cfg.RedisOptions.Addr,
+		Password: cfg.RedisOptions.Password,
+		DB:       cfg.RedisOptions.DB,
+	})
+
+	// Create Biz
+	bizInstance := biz.NewBiz(store, client, minioStore, cfg.QdrantOptions, asynqClient)
+
+	// Start Worker
+	w := worker.NewWorker(cfg.RedisOptions.Addr, cfg.RedisOptions.Password, cfg.RedisOptions.DB, bizInstance.KnowledgeV1())
+	go func() {
+		if err := w.Run(); err != nil {
+			slog.Error("Failed to start worker", "err", err)
+		}
+	}()
+
+	cfg.InstallRESTAPI(engine, bizInstance, store)
+
+	// Monitor
+	h := asynqmon.New(asynqmon.Options{
+		RootPath: "/admin/queues",
+		RedisConnOpt: asynq.RedisClientOpt{
+			Addr:     cfg.RedisOptions.Addr,
+			Password: cfg.RedisOptions.Password,
+			DB:       cfg.RedisOptions.DB,
+		},
+	})
+	engine.Any("/admin/queues/*filepath", gin.WrapH(h))
 
 	return &ginServer{
 		cfg: cfg,
@@ -53,7 +101,7 @@ func (cfg *HttpServerConfig) NewGinServer() (Server, error) {
 	}, nil
 }
 
-func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.IStore, client llm.Client) {
+func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, bizInstance biz.IBiz, store store.IStore) {
 	engine.NoRoute(func(c *gin.Context) {
 		core.WriteResponse(c, nil, errorsx.ErrNotFound.WithMessage("Page not found."))
 	})
@@ -63,7 +111,7 @@ func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.ISto
 	})
 
 	// 创建核心业务处理器
-	handler := handler.NewHandler(biz.NewBiz(store, client), validation.NewValidator(store))
+	handler := handler.NewHandler(bizInstance, validation.NewValidator(store))
 
 	// 注册用户登录和令牌刷新接口。这2个接口比较简单，所以没有 API 版本
 	engine.POST("/login", handler.Login)
@@ -98,6 +146,13 @@ func (cfg *HttpServerConfig) InstallRESTAPI(engine *gin.Engine, store store.ISto
 		{
 			chatv1.Use(authMiddlewares...)
 			chatv1.POST("", handler.Chat)
+		}
+
+		knowledgev1 := v1.Group("/knowledge")
+		{
+			knowledgev1.Use(authMiddlewares...)
+			knowledgev1.POST("/upload", handler.UploadKnowledge)
+			knowledgev1.POST("/search", handler.SearchKnowledge)
 		}
 	}
 }

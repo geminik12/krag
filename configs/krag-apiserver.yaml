@@ -32,3 +32,20 @@ ollama:
   host: http://localhost:11434
   default-model: llama3.2
   system-prompt: You are a helpful assistant, please answer the questions in a concise manner. If the question is not related to the knowledge, please answer "I don't know". answer the question in what language the question is asked.
+
+minio:
+  endpoint: localhost:9000
+  access-key-id: minioadmin
+  secret-access-key: minioadmin
+  bucket: krag-files
+  use-ssl: false
+
+qdrant:
+  url: http://localhost:6333
+  api-key: ""
+  collection-name: krag_knowledge
+
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
